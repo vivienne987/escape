@@ -1,0 +1,333 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escape to Freedom</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: #171714; color: #f7ead0;
+  font-family: Georgia, serif;
+}
+header {
+  text-align: center; padding: 18px;
+  background: #29251e; border-bottom: 2px solid #8e754b;
+}
+h1 { margin: 0 0 8px; letter-spacing: 2px; }
+#timer { font: bold 30px monospace; color: #f2c879; }
+main { max-width: 900px; margin: auto; padding: 16px; }
+#room {
+  min-height: 390px; position: relative; overflow: hidden;
+  background: linear-gradient(#514332 0 72%, #30251d 72%);
+  border: 5px solid #92774e; border-radius: 8px;
+  padding: 16px;
+}
+#room::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0;
+  height: 5px; background: #94764b;
+}
+.objects {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 10px; position: relative; z-index: 1;
+}
+.obj {
+  color: #fff1d4; background: #32271f;
+  border: 1px solid #aa8d60; border-radius: 6px;
+  padding: 12px 5px; min-height: 85px;
+  cursor: pointer; font: 15px Georgia, serif;
+}
+.obj:hover { background: #59432e; }
+.obj:focus-visible, button:focus-visible, input:focus-visible {
+  outline: 3px solid #f5d27d; outline-offset: 3px;
+}
+.emoji { display: block; font-size: 28px; margin-bottom: 6px; }
+#message, #panel {
+  background: #29251e; border: 1px solid #8e754b;
+  border-radius: 8px; margin-top: 14px; padding: 16px;
+}
+#panel:empty { display: none; }
+button.action {
+  background: #d9b879; color: #20180e;
+  padding: 10px 14px; margin: 5px 3px 0 0;
+  border: 0; border-radius: 4px; cursor: pointer;
+  font-weight: bold;
+}
+input {
+  padding: 10px; width: 100%; max-width: 360px;
+  margin: 8px 0; background: #fff5e2;
+  border: 1px solid #8e754b; border-radius: 4px;
+}
+.small { color: #d5c6a8; font-size: 14px; line-height: 1.6; }
+#inventory { color: #f2d294; line-height: 1.8; }
+#ending { font-size: 18px; line-height: 1.7; }
+@media(max-width: 520px) {
+  .objects { grid-template-columns: repeat(2, 1fr); }
+  #room { padding: 10px; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>ESCAPE TO FREEDOM</h1>
+  <div id="timer">15:00</div>
+  <div class="small">Find the clues. Solve the puzzles. Find the exit.</div>
+</header>
+
+<main>
+  <p>You have entered a room with two locked safes.
+  Somewhere inside are the keys you need. Time is running out.</p>
+
+  <div id="room">
+    <div class="objects">
+      <button class="obj" onclick="portrait(0)">
+        <span class="emoji">🖼️</span>Portrait I
+      </button>
+      <button class="obj" onclick="portrait(1)">
+        <span class="emoji">🖼️</span>Portrait II
+      </button>
+      <button class="obj" onclick="portrait(2)">
+        <span class="emoji">🖼️</span>Portrait III
+      </button>
+      <button class="obj" onclick="portrait(3)">
+        <span class="emoji">🖼️</span>Portrait IV
+      </button>
+
+      <button class="obj" onclick="search('chair')">
+        <span class="emoji">🪑</span>Chair
+      </button>
+      <button class="obj" onclick="search('desk')">
+        <span class="emoji">🗄️</span>Desk
+      </button>
+      <button class="obj" onclick="openSafe(1)">
+        <span class="emoji">🔐</span>Safe One
+      </button>
+      <button class="obj" onclick="openSafe(2)">
+        <span class="emoji">🔐</span>Safe Two
+      </button>
+
+      <button class="obj" onclick="search('floor')">
+        <span class="emoji">🪙</span>Look at the Floor
+      </button>
+      <button class="obj" onclick="search('corner')">
+        <span class="emoji">🕯️</span>Dark Corner
+      </button>
+      <button class="obj" onclick="search('wall')">
+        <span class="emoji">📜</span>Wall
+      </button>
+      <button class="obj" onclick="escape()">
+        <span class="emoji">🚪</span>Exit Door
+      </button>
+    </div>
+  </div>
+
+  <div id="message" aria-live="polite">
+    <strong>What will you investigate first?</strong>
+    <p class="small">Click objects around the room to search for clues.</p>
+  </div>
+  <div id="panel" aria-live="polite"></div>
+
+  <section id="message">
+    <strong>Your inventory</strong>
+    <div id="inventory">Keys: 0/2 · Coins: 0/5</div>
+  </section>
+  <p class="small">
+    Educational game: this fictional scenario is inspired by historical
+    restrictions on literacy and the barriers enslaved people faced in
+    seeking freedom. See the historical notes after the game.
+  </p>
+</main>
+
+<script>
+let seconds = 900;
+let ended = false;
+let paperFound = false;
+let keyFound = false;
+let seenPortraits = [false, false, false, false];
+let coins = new Set();
+let keys = 0;
+let safe1Open = false;
+let safe2Open = false;
+
+// The four symbols appear from left to right on the portraits.
+const symbols = ["△", "○", "☆", "□"];
+const colors = ["green", "purple", "blue", "yellow"];
+const coinPlaces = ["floor", "chair", "desk", "corner", "wall"];
+
+const $ = id => document.getElementById(id);
+
+function say(html) {
+  $("message").innerHTML = html;
+  $("panel").innerHTML = "";
+}
+
+function inventory() {
+  $("inventory").textContent =
+    `Keys: ${keys}/2 · Coins: ${coins.size}/5`;
+}
+
+function panel(html) {
+  $("panel").innerHTML = html;
+}
+
+function tick() {
+  if (ended) return;
+  seconds--;
+  $("timer").textContent =
+    String(Math.floor(seconds / 60)).padStart(2, "0") + ":" +
+    String(seconds % 60).padStart(2, "0");
+
+  if (seconds <= 0) {
+    finish(false);
+  }
+}
+const clock = setInterval(tick, 1000);
+
+function search(place) {
+  if (ended) return;
+
+  if (place === "chair" && !keyFound) {
+    keyFound = true;
+    say("<strong>You found a folded decoding key under the chair!</strong>" +
+      "<p>It explains the symbols: △ = GREEN, ○ = PURPLE, " +
+      "☆ = BLUE, □ = YELLOW. The paper may make sense now.</p>");
+    return;
+  }
+
+  if (place === "desk" && !paperFound) {
+    paperFound = true;
+    say("<strong>You found a paper covered in strange symbols.</strong>" +
+      "<p>It seems unreadable. Search the room for a decoding key.</p>");
+    return;
+  }
+
+  if (coinPlaces.includes(place) && coins.size < 5) {
+    // Each location hides one coin. The chair can hold both the
+    // decoding clue and a coin.
+    if (!coins.has(place)) {
+      coins.add(place);
+      say(`<strong>You found a coin!</strong><p>Coins collected: ${coins.size}/5.</p>`);
+      inventory();
+    } else {
+      say("You have already searched here.");
+    }
+    return;
+  }
+
+  say("You search carefully, but find nothing new here.");
+}
+
+function portrait(i) {
+  if (ended) return;
+  seenPortraits[i] = true;
+
+  let text = `<strong>Portrait ${i + 1}</strong><p>`;
+  if (!paperFound) {
+    text += "You notice a strange symbol: " + symbols[i] +
+      ". You may need to find a paper that explains it.";
+  } else if (!keyFound) {
+    text += "The paper is still difficult to interpret. Find the decoding key.";
+  } else {
+    text += `The symbol is ${symbols[i]}. The key translates it to ${colors[i].toUpperCase()}.`;
+  }
+  text += "</p>";
+
+  if (seenPortraits.every(Boolean)) {
+    text += "<p>You have examined all four portraits. Remember their order: left to right.</p>";
+  }
+  say(text);
+}
+
+function openSafe(n) {
+  if (ended) return;
+
+  if (n === 1) {
+    if (safe1Open) {
+      say("Safe One is open. You already collected its key.");
+      return;
+    }
+    if (!paperFound || !keyFound ||
+        !seenPortraits.every(Boolean)) {
+      say("Safe One needs a four-color code. Find the paper and decoding key, then inspect all four portraits.");
+      return;
+    }
+
+    panel(`<strong>Safe One: Color Combination</strong>
+      <p>Enter the four colors from the portraits, left to right.</p>
+      <input id="colorCode" placeholder="e.g. green purple blue yellow"
+        aria-label="Four-color combination">
+      <button class="action" onclick="checkColor()">Unlock Safe</button>`);
+    return;
+  }
+
+  if (safe2Open) {
+    say("Safe Two is open. You already collected its key.");
+  } else if (coins.size < 5) {
+    say(`<strong>Safe Two is locked.</strong><p>It requires five coins. You have ${coins.size}/5.</p>`);
+  } else {
+    safe2Open = true;
+    keys++;
+    inventory();
+    say("<strong>Safe Two opens!</strong><p>You found the second exit key.</p>");
+  }
+}
+
+function checkColor() {
+  const value = $("colorCode").value.trim().toLowerCase()
+    .replace(/[,.]/g, " ").replace(/\s+/g, " ");
+  if (value === colors.join(" ")) {
+    safe1Open = true;
+    keys++;
+    inventory();
+    say("<strong>Correct! Safe One opens.</strong>" +
+      "<p>You have found the first exit key. Literacy and access to " +
+      "information can reveal what once seemed impossible to understand.</p>");
+  } else {
+    say("That combination did not work. Recheck the symbols and the order of the portraits.");
+  }
+}
+
+function escape() {
+  if (ended) return;
+  if (keys === 2) {
+    finish(true);
+  } else {
+    say(`<strong>The exit remains locked.</strong><p>You need both keys. Current total: ${keys}/2.</p>`);
+  }
+}
+
+function finish(won) {
+  if (ended) return;
+  ended = true;
+  clearInterval(clock);
+  $("panel").innerHTML = "";
+  $("room").style.display = "none";
+
+  $("message").innerHTML = won
+    ? `<div id="ending"><h2>You reached the exit.</h2>
+       You solved both puzzles and found both keys before time ran out.
+       <p>But remember: this game is only a small window into a much
+       larger history. Real people faced laws, violence, family
+       separation, and many other barriers under slavery.</p></div>`
+    : `<div id="ending"><h2>Time has run out.</h2>
+       In this fictional scenario, you have been captured.
+       <p>Enslaved people faced the constant threat of being denied
+       freedom, separated from family, and subjected to violence.
+       Their experiences varied, and many resisted in countless ways.
+       This ending cannot recreate what they endured.</p></div>`;
+
+  $("message").innerHTML += `<h3>Reflect on what you learned</h3>
+    <p>1. Why did access to literacy matter to enslaved people?</p>
+    <p>2. Why could access to money and resources affect a person's options?</p>
+    <p>3. What barriers made freedom difficult to obtain?</p>
+    <p class="small">Historical note: Not every enslaved person was illiterate,
+    and access to money did not guarantee freedom. Laws and circumstances
+    differed across time and place.</p>
+    <button class="action" onclick="location.reload()">Play Again</button>`;
+}
+
+inventory();
+</script>
+</body>
+</html>
