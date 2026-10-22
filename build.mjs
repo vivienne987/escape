@@ -1,0 +1,14 @@
+import {build} from 'esbuild';
+import {mkdir,readFile,writeFile} from 'node:fs/promises';
+const result=await build({entryPoints:['src/main.js'],bundle:true,write:false,minify:true,format:'iife',target:'es2020',legalComments:'inline',loader:{'.png':'dataurl'}});
+const shell=await readFile('src/shell.html','utf8');
+const css=await readFile('src/style.css','utf8');
+const license=await readFile('THREE-LICENSE.txt','utf8');
+const js='/* '+license+' */\n'+result.outputFiles[0].text.replace(/<\/script/gi,'<\\/script');
+const html=shell.replace('/*STYLE*/',()=>css).replace('/*BUNDLE*/',()=>js);
+await writeFile('vivian_escape_room.html',html);
+await writeFile('index.html',html);
+await mkdir('dist',{recursive:true});
+await writeFile('dist/index.html',html);
+await writeFile('dist/.nojekyll','');
+console.log('Built standalone vivian_escape_room.html (offline, no external assets).');

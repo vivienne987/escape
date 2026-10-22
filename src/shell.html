@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#191d1b"><title>Escape to Freedom · A 3D learning experience</title><style>/*STYLE*/</style></head>
+<body>
+<main id="app" class="title-mode">
+<canvas id="world" aria-label="Three-dimensional escape room. Use WASD to move, drag to look, and E to inspect." tabindex="0"></canvas>
+<div class="vignette" aria-hidden="true"></div>
+<header><div class="brand"><span class="eyebrow">AN INTERACTIVE HISTORY PROJECT</span><h1>Escape to Freedom<span>3D</span></h1></div><div class="clock"><span class="eyebrow">TIME REMAINING</span><strong id="timer">15:00</strong></div></header>
+<aside class="progress"><span id="keyCount">0 / 2 KEYS</span><span id="coinCount">0 / 5 COINS</span></aside>
+<div id="crosshair" aria-hidden="true">+</div>
+<div id="target"><span id="targetText">Explore the room</span><button id="inspect">Inspect <kbd>E</kbd></button></div>
+<footer><div class="controls"><span><kbd>W A S D</kbd> move</span><span>Drag to look · <kbd>← →</kbd> turn</span></div><nav><button id="journal">Clue notebook</button><button id="hint">Hint</button><button id="about">Learning & sources</button><button id="restart">Restart</button></nav></footer>
+<div class="touch-pad" aria-label="Movement controls"><button data-key="KeyW" aria-label="Move forward">▲</button><div><button data-key="KeyA" aria-label="Move left">◀</button><button data-key="KeyS" aria-label="Move backward">▼</button><button data-key="KeyD" aria-label="Move right">▶</button></div></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<dialog id="modal" aria-labelledby="modalTitle"><div class="modal-top"><span class="eyebrow" id="modalTag">FIELD NOTES</span><button id="close" aria-label="Close dialog">✕</button></div><h2 id="modalTitle"></h2><div id="modalBody"></div><div id="modalActions"></div></dialog>
+<section id="titleScreen" aria-labelledby="gameTitle">
+<div class="title-shade"></div><div class="title-content"><div class="title-rule"></div><h2 id="gameTitle">Escape<br><em>to</em> Freedom</h2><div class="title-stats"><span><b>15</b> MINUTES</span><span><b>2</b> KEYS</span><span><b>1</b> WAY OUT</span></div><div class="title-menu"><button id="startGame" class="start-game">Start game <span aria-hidden="true">↗</span></button><button id="howTo">How to play</button><button id="titleAbout">History & learning</button></div></div><div class="title-corner"><span class="title-dot"></span> EXPLORE IN 3D</div></section>
+<div id="loading">Preparing your room…</div>
+</main>
+<script>/*BUNDLE*/</script>
+</body></html>
